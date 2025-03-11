@@ -1,0 +1,48 @@
+version: '3.9'  # Define a versão do Docker Compose.
+
+services:
+  db:  # Define o serviço do banco de dados PostgreSQL.
+    image: postgres  # Usa a imagem oficial do PostgreSQL.
+    restart: always  # Sempre reinicia o contêiner em caso de falha.
+    environment:
+      POSTGRES_USER: postgres  # Define o nome de usuário do PostgreSQL.
+      POSTGRES_PASSWORD: root  # Define a senha do PostgreSQL.
+      POSTGRES_DB: imagelite  # Define o nome do banco de dados.
+    ports:
+      - '5433:5432'  # Mapeia a porta 5433 do host para a porta 5432 do contêiner.
+    volumes:
+      - ./data:/var/lib/postgresql/data  # Monta um volume para persistir os dados do PostgreSQL.
+    networks:
+      - imagelitenetwork  # Conecta o serviço à rede imagelitenetwork.
+
+  pgadmin:  # Define o serviço do pgAdmin.
+    image: dpage/pgadmin4  # Usa a imagem oficial do pgAdmin 4.
+    restart: always  # Sempre reinicia o contêiner em caso de falha.
+    environment:
+      PGADMIN_DEFAULT_PASSWORD: admin  # Define a senha padrão do pgAdmin.
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com  # Define o email padrão do pgAdmin.
+    ports:
+      - '15432:80'  # Mapeia a porta 15432 do host para a porta 80 do contêiner.
+    depends_on:
+      - db  # Este serviço depende do serviço do banco de dados.
+    networks:
+      - imagelitenetwork  # Conecta o serviço à rede imagelitenetwork.
+
+  sbootapp:  # Define o serviço da aplicação Spring Boot.
+    build:
+      dockerfile: Dockerfile  # Define o Dockerfile usado para construir a imagem.
+    container_name: imageliteapi  # Define o nome do contêiner.
+    restart: on-failure  # Reinicia o contêiner em caso de falha.
+    depends_on:
+      - db  # Este serviço depende do serviço do banco de dados.
+      - pgadmin  # Este serviço depende do serviço do pgAdmin.
+    ports:
+      - '8080:8080'  # Mapeia a porta 8080 do host para a porta 8080 do contêiner.
+    networks:
+      - imagelitenetwork  # Conecta o serviço à rede imagelitenetwork.
+    environment:
+      - 'POSTGRES_HOST=db'  # Define a variável de ambiente POSTGRES_HOST.
+
+networks:
+  imagelitenetwork:
+    driver: bridge  # Define o driver da rede como bridge.
